@@ -129,7 +129,7 @@
                 return;
             }
 
-            $.get('@Url.Action("GetVehiculosByCliente", "Cita")/' + clienteId, function (data) {
+            $.get('/Cita/GetVehiculosByCliente/' + clienteId, function (data) {
                 if (data.length === 0) {
                     $('#vehiculoId').html('<option value="">Este cliente no tiene vehículos</option>');
                 } else {
@@ -231,14 +231,14 @@
             $('#modalCita').modal('show');
         }
 
-        function editarCita(id) {
+                function editarCita(id) {
             $.get('@Url.Action("GetById", "Cita")/' + id, function (data) {
                 $('#tituloModal').text('Editar Cita');
                 $('#citaId').val(data.citaId);
                 $('#clienteId').val(data.clienteId);
 
                 // Cargar vehículos del cliente y luego seleccionar el vehículo
-                $.get('@Url.Action("GetVehiculosByCliente", "Cita")/' + data.clienteId, function (vehiculos) {
+                $.get('@Url.Action("GetVehiculosByCliente", "Cita")?clienteId=' + clienteId, function (data) {
                     let options = '<option value="">Seleccione un vehículo</option>';
                     vehiculos.forEach(vehiculo => {
                         options += `<option value="${vehiculo.vehiculoId}">${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.modelo}</option>`;

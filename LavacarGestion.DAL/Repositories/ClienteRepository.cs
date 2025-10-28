@@ -34,11 +34,23 @@ namespace LavacarGestion.DAL.Repositories
             await _context.SaveChangesAsync();
             return cliente;
         }
-
         public async Task<Cliente> UpdateAsync(Cliente cliente)
         {
-            _context.Clientes.Update(cliente);
-            await _context.SaveChangesAsync();
+            // Usar AsNoTracking para evitar conflictos
+            var clienteExistente = await _context.Clientes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.ClienteId == cliente.ClienteId);
+
+            if (clienteExistente != null)
+            {
+                // Preservar FechaRegistro del cliente existente
+                cliente.FechaRegistro = clienteExistente.FechaRegistro;
+
+                // Actualizar la entidad
+                _context.Clientes.Update(cliente);
+                await _context.SaveChangesAsync();
+            }
+
             return cliente;
         }
 

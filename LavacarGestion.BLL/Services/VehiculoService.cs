@@ -72,12 +72,6 @@ namespace LavacarGestion.BLL.Services
 
         public async Task<(bool exito, string mensaje, Vehiculo? vehiculo)> ActualizarVehiculoAsync(Vehiculo vehiculo)
         {
-            // Verificar que el vehículo existe
-            var vehiculoExistente = await _vehiculoRepository.GetByIdAsync(vehiculo.VehiculoId);
-            if (vehiculoExistente == null)
-            {
-                return (false, "El vehículo no existe.", null);
-            }
 
             // Validar que el cliente existe
             var cliente = await _clienteRepository.GetByIdAsync(vehiculo.ClienteId);

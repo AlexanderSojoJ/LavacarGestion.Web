@@ -60,12 +60,6 @@ namespace LavacarGestion.BLL.Services
 
         public async Task<(bool exito, string mensaje, Cliente? cliente)> ActualizarClienteAsync(Cliente cliente)
         {
-            // Verificar que el cliente existe
-            var clienteExistente = await _clienteRepository.GetByIdAsync(cliente.ClienteId);
-            if (clienteExistente == null)
-            {
-                return (false, "El cliente no existe.", null);
-            }
 
             // Validar edad (no menores de 18 años)
             var edad = CalcularEdad(cliente.FechaNacimiento);

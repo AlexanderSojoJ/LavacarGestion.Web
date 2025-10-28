@@ -20,8 +20,15 @@ builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<VehiculoService>();
 builder.Services.AddScoped<CitaService>();
 
+// Configurar JSON para evitar ciclos de referencia
+
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        });
 
 var app = builder.Build();
 

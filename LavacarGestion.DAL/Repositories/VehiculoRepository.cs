@@ -45,8 +45,27 @@ namespace LavacarGestion.DAL.Repositories
 
         public async Task<Vehiculo> UpdateAsync(Vehiculo vehiculo)
         {
-            _context.Vehiculos.Update(vehiculo);
-            await _context.SaveChangesAsync();
+            // Buscar sin tracking
+            var vehiculoExistente = await _context.Vehiculos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.VehiculoId == vehiculo.VehiculoId);
+
+            if (vehiculoExistente != null)
+            {
+                // Detach cualquier entidad rastreada
+                var tracked = _context.ChangeTracker.Entries<Vehiculo>()
+                    .FirstOrDefault(e => e.Entity.VehiculoId == vehiculo.VehiculoId);
+
+                if (tracked != null)
+                {
+                    tracked.State = EntityState.Detached;
+                }
+
+                // Ahora actualizar
+                _context.Vehiculos.Update(vehiculo);
+                await _context.SaveChangesAsync();
+            }
+
             return vehiculo;
         }
 

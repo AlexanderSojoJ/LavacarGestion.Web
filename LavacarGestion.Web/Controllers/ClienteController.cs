@@ -58,22 +58,15 @@ namespace LavacarGestion.Web.Controllers
 [HttpPost]
 public async Task<IActionResult> Edit([FromBody] Cliente cliente)
 {
-    // Obtener el cliente existente para preservar FechaRegistro
-    var clienteExistente = await _clienteService.ObtenerPorIdAsync(cliente.ClienteId);
-    if (clienteExistente != null)
-    {
-        cliente.FechaRegistro = clienteExistente.FechaRegistro;
-    }
+            var resultado = await _clienteService.ActualizarClienteAsync(cliente);
 
-    var resultado = await _clienteService.ActualizarClienteAsync(cliente);
+            if (resultado.exito)
+            {
+                return Json(new { success = true, message = resultado.mensaje });
+            }
 
-    if (resultado.exito)
-    {
-        return Json(new { success = true, message = resultado.mensaje });
-    }
-
-    return Json(new { success = false, message = resultado.mensaje });
-}
+            return Json(new { success = false, message = resultado.mensaje });
+        }
 
         // POST: Cliente/Delete/5
         [HttpPost]
