@@ -1,0 +1,338 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Citas";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-calendar-alt"></i> Gestión de Citas
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-success" onclick="abrirModalNuevo()">
+                            <i class="fas fa-plus"></i> Nueva Cita
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="tablaCitas" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Cliente</th>
+                                    <th>Vehículo</th>
+                                    <th>Fecha Cita</th>
+                                    <th>Estado</th>
+                                    <th>Observaciones</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Cita -->
+<div class="modal fade" id="modalCita" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="tituloModal">Nueva Cita</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formCita">
+                    <input type="hidden" id="citaId" />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="clienteId">Cliente <span class="text-danger">*</span></label>
+                                <select class="form-control" id="clienteId" required onchange="cargarVehiculosCliente()">
+                                    <option value="">Seleccione un cliente</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vehiculoId">Vehículo <span class="text-danger">*</span></label>
+                                <select class="form-control" id="vehiculoId" required>
+                                    <option value="">Seleccione primero un cliente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="fechaCita">Fecha de la Cita <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="fechaCita" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="observaciones">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCita()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css" />
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        let tabla;
+
+        $(document).ready(function () {
+            cargarClientes();
+            cargarTabla();
+        });
+
+        function cargarClientes() {
+            $.get('@Url.Action("GetClientes", "Cita")', function (data) {
+                let options = '<option value="">Seleccione un cliente</option>';
+                data.forEach(cliente => {
+                    options += `<option value="${cliente.clienteId}">${cliente.nombre} ${cliente.apellidos}</option>`;
+                });
+                $('#clienteId').html(options);
+            });
+        }
+
+        function cargarVehiculosCliente() {
+            const clienteId = $('#clienteId').val();
+            if (!clienteId) {
+                $('#vehiculoId').html('<option value="">Seleccione primero un cliente</option>');
+                return;
+            }
+
+            $.get('@Url.Action("GetVehiculosByCliente", "Cita")/' + clienteId, function (data) {
+                if (data.length === 0) {
+                    $('#vehiculoId').html('<option value="">Este cliente no tiene vehículos</option>');
+                } else {
+                    let options = '<option value="">Seleccione un vehículo</option>';
+                    data.forEach(vehiculo => {
+                        options += `<option value="${vehiculo.vehiculoId}">${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.modelo}</option>`;
+                    });
+                    $('#vehiculoId').html(options);
+                }
+            });
+        }
+
+        function cargarTabla() {
+            tabla = $('#tablaCitas').DataTable({
+                ajax: {
+                    url: '@Url.Action("GetAll", "Cita")',
+                    type: 'GET',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'citaId' },
+                    {
+                        data: 'cliente',
+                        render: function (data) {
+                            return data ? data.nombre + ' ' + data.apellidos : '';
+                        }
+                    },
+                    {
+                        data: 'vehiculo',
+                        render: function (data) {
+                            return data ? data.placa + ' - ' + data.marca : '';
+                        }
+                    },
+                    {
+                        data: 'fechaCita',
+                        render: function (data) {
+                            return new Date(data).toLocaleString('es-CR');
+                        }
+                    },
+                    {
+                        data: 'estado',
+                        render: function (data) {
+                            let badge = '';
+                            switch (data) {
+                                case 1:
+                                    badge = '<span class="badge badge-primary">Ingresada</span>';
+                                    break;
+                                case 2:
+                                    badge = '<span class="badge badge-danger">Cancelada</span>';
+                                    break;
+                                case 3:
+                                    badge = '<span class="badge badge-success">Concluida</span>';
+                                    break;
+                            }
+                            return badge;
+                        }
+                    },
+                    { data: 'observaciones' },
+                    {
+                        data: null,
+                        render: function (data) {
+                            let botones = `
+                                <button class="btn btn-sm btn-warning" onclick="editarCita(${data.citaId})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="eliminarCita(${data.citaId})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            `;
+
+                            // Botones para cambiar estado
+                            if (data.estado === 1) { // Ingresada
+                                botones += `
+                                    <button class="btn btn-sm btn-success" onclick="cambiarEstado(${data.citaId}, 3)" title="Marcar como Concluida">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cambiarEstado(${data.citaId}, 2)" title="Cancelar">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                `;
+                            }
+
+                            return botones;
+                        }
+                    }
+                ],
+                order: [[3, 'desc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                }
+            });
+        }
+
+        function abrirModalNuevo() {
+            $('#tituloModal').text('Nueva Cita');
+            $('#formCita')[0].reset();
+            $('#citaId').val('');
+            $('#vehiculoId').html('<option value="">Seleccione primero un cliente</option>');
+            $('#modalCita').modal('show');
+        }
+
+        function editarCita(id) {
+            $.get('@Url.Action("GetById", "Cita")/' + id, function (data) {
+                $('#tituloModal').text('Editar Cita');
+                $('#citaId').val(data.citaId);
+                $('#clienteId').val(data.clienteId);
+
+                // Cargar vehículos del cliente y luego seleccionar el vehículo
+                $.get('@Url.Action("GetVehiculosByCliente", "Cita")/' + data.clienteId, function (vehiculos) {
+                    let options = '<option value="">Seleccione un vehículo</option>';
+                    vehiculos.forEach(vehiculo => {
+                        options += `<option value="${vehiculo.vehiculoId}">${vehiculo.placa} - ${vehiculo.marca} ${vehiculo.modelo}</option>`;
+                    });
+                    $('#vehiculoId').html(options);
+                    $('#vehiculoId').val(data.vehiculoId);
+                });
+
+                $('#fechaCita').val(data.fechaCita.substring(0, 16));
+                $('#observaciones').val(data.observaciones);
+                $('#modalCita').modal('show');
+            });
+        }
+
+        function guardarCita() {
+            const citaId = $('#citaId').val();
+            const url = citaId ? '@Url.Action("Edit", "Cita")' : '@Url.Action("Create", "Cita")';
+
+            const cita = {
+                citaId: citaId ? parseInt(citaId) : 0,
+                clienteId: parseInt($('#clienteId').val()),
+                vehiculoId: parseInt($('#vehiculoId').val()),
+                fechaCita: $('#fechaCita').val(),
+                observaciones: $('#observaciones').val() || ''
+            };
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(cita),
+                success: function (response) {
+                    if (response.success) {
+                        Swal.fire('Éxito', response.message, 'success');
+                        $('#modalCita').modal('hide');
+                        tabla.ajax.reload();
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error', 'Ocurrió un error al guardar la cita', 'error');
+                }
+            });
+        }
+
+        function cambiarEstado(citaId, nuevoEstado) {
+            const estadoTexto = nuevoEstado === 3 ? 'Concluida' : 'Cancelada';
+
+            Swal.fire({
+                title: '¿Está seguro?',
+                text: `¿Desea marcar esta cita como ${estadoTexto}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, cambiar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("CambiarEstado", "Cita")', { citaId: citaId, estado: nuevoEstado }, function (response) {
+                        if (response.success) {
+                            Swal.fire('Actualizado', response.message, 'success');
+                            tabla.ajax.reload();
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function eliminarCita(id) {
+            Swal.fire({
+                title: '¿Está seguro?',
+                text: "Esta acción no se puede revertir",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("Delete", "Cita")/' + id, function (response) {
+                        if (response.success) {
+                            Swal.fire('Eliminado', response.message, 'success');
+                            tabla.ajax.reload();
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}
